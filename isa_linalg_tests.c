@@ -1,9 +1,7 @@
-
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <float.h>
-
 
 typedef uint8_t  u8;
 typedef uint16_t u16;
@@ -18,9 +16,6 @@ typedef int64_t  i64;
 typedef float    f32;
 typedef double   f64;
 
-static const f64 ConstPi = 3.14159265358979323846;
-
-
 #define ISA_LINALG_IMPLEMENTATION
 #define ISA_LINALG_PRINTF
 #define ISA_LINALG_DECORATE(name) name
@@ -30,13 +25,14 @@ static const f64 ConstPi = 3.14159265358979323846;
 #include "stb_sprintf.h"
 
 
-
 // '-' + 18 digits + '.' + 18 digits + '\0'
 #define STB_FLT_STR_LEN (39)
-#define VEC3_STRING_LEN (STB_FLT_STR_LEN*3 + 3)
-#define VEC4_STRING_LEN (STB_FLT_STR_LEN*4 + 4)
-#define MAT3_STRING_LEN (STB_FLT_STR_LEN*9 + 6 + 3)
-#define MAT4_STRING_LEN (STB_FLT_STR_LEN*16 + 12 + 4)
+// NOTE(Ingar): Since STB_FLT_STR_LEN contains a char for the null-terminator, the
+// following defs technically contain more chars than necessary, but better safe than sorry!
+#define VEC3_STRING_LEN (STB_FLT_STR_LEN*3 + 3)       // Three floats, two spaces and null-terminator
+#define VEC4_STRING_LEN (STB_FLT_STR_LEN*4 + 4)       // Four floats, three spaces and null-terminator
+#define MAT3_STRING_LEN (STB_FLT_STR_LEN*9 + 6 + 3)   // Nine floats, six spaces, two new-lines and null-terminator
+#define MAT4_STRING_LEN (STB_FLT_STR_LEN*16 + 12 + 4) // 16 floats, 12 spaces, three new-lines and null-terminator
 
 static void v3_sprintf(char *String, Vec3 *v3)
 {
@@ -69,7 +65,6 @@ static void m4_sprintf(char *String, Mat4 *m4)
     Vec4 v2 = m4->v2;
     Vec4 v3 = m4->v3;
     Vec4 v4 = m4->v4;
-    
     stbsp_sprintf(String, 
                   "%.5f %.5f %.5f %.5f\n"
                   "%.5f %.5f %.5f %.5f\n"

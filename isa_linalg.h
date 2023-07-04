@@ -4,6 +4,9 @@
 // Error handling
 // Debug stuff
 // Look into SIMD intrinsics for matrix operations
+// Make using fast inverse sqrt from quake an option? It should definitely be optional,
+//      since it involves undefine behaviour
+// Profile the code for types with known size vs code for the arbitrary-sized types
 
 #ifndef ISA_LINALG_INCLUDE_H
 #define ISA_LINALG_INCLUDE_H
@@ -33,11 +36,35 @@
 #endif
 #endif
 
-#include <stdint.h>
-//#include <math.h>
-
 #ifdef ISA_LINALG_PRINTF
 #include <stdio.h>
+#endif
+
+#include <stdint.h>
+#include <math.h>
+
+// Wrappers for stdlib functions. You can define these if you want to
+// use your own or the double precision versions of these functions.
+#ifndef ISA_LINALG_SQRTF
+#define ISA_LINALG_SQRTF(radicand) sqrtf(radicand)
+#endif
+#ifndef ISA_LINALG_POW
+#define ISA_LINALG_POW(base, exponent) powf(base, exponent)
+#endif
+#ifndef ISA_LINALG_ATAN2
+#define ISA_LINALG_ATAN2(y, x) atan2f(y, x)
+#endif
+#ifndef ISA_LINALG_ASIN
+#define ISA_LINALG_ASIN(x) asinf(x)
+#endif
+#ifndef ISA_LINALG_ACOS
+#define ISA_LINALG_ACOS(x) acosf(x)
+#endif
+#ifndef ISA_LINALG_COS
+#define ISA_LINALG_COS(x) cosf(x)
+#endif
+#ifndef ISA_LINALG_FABS
+#define ISA_LINALG_FABS(x) fabs(x)
 #endif
 
 // Defines for types used internally, because the C names are stupid and verbose
@@ -53,6 +80,8 @@
 
 #define f32 float
 #define f64 double
+
+#define ISALG__PI32 3.14159265358979323846f;
 
 typedef union 
 {
@@ -113,7 +142,7 @@ typedef union
     
 } Mat4;
 
-// Arbitrary dimensioned vector and matrix
+// Arbitrary-dimensioned vector and matrix
 typedef struct
 {
     u8   dim;
@@ -163,6 +192,28 @@ ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v4_scale)(Vec4 *x, f32 s);
 
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_scale)(Mat3 *A, f32 s);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_scale)(Mat4 *A, f32 s);
+
+
+// Vector operations //
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v3_cross)(const Vec3 *x, const Vec3 *y, Vec3 *out);
+
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v_dot) (const Vec  *x, const Vec  *y, u8 dim);
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v3_dot)(const Vec3 *x, const Vec3 *y);
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v4_dot)(const Vec4 *x, const Vec4 *y);
+
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v_norm) (const Vec  *x);
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v3_norm)(const Vec3 *x);
+ISALG__PUBLICDEC inline f32 ISA_LINALG_DECORATE(v4_norm)(const Vec4 *x);
+
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v_normalize) (Vec  *x);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v3_normalize)(Vec3 *x);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v4_normalize)(Vec4 *x);
+
+
+// Quaternion operations //
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(quatinv)(Vec4 *x);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(quatprod)(const Vec4 *q, const Vec4 *p, Vec4 *out);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(q2euler) (const Vec4 *q, Vec3 *out);
 
 
 // Matrix multiplication //
@@ -353,6 +404,145 @@ ISA_LINALG_DECORATE(m4_scale)(Mat4 *A, f32 s)
     // TODO(Ingar): Same as with m3_scale
     isa_linalg__f32_scale_array(A->mat, s, 16);
 }
+
+
+// Vector operations //
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v3_cross)(const Vec3 *x, const Vec3 *y, Vec3 *out)
+{
+    out->vec[0] = x->vec[1] * y->vec[2] - x->vec[2] * y->vec[1];
+    out->vec[1] = x->vec[2] * y->vec[0] - x->vec[0] * y->vec[2];
+    out->vec[2] = x->vec[0] * y->vec[1] - x->vec[1] * y->vec[0];
+}
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v_dot)(const Vec *x, const Vec *y, u8 dim)
+{
+    f32 square = 0.0;
+    for(u8 i = 0; i < dim; ++i){
+        square += x->vec[i] * y->vec[i];
+    }
+    
+    return square;
+}
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v3_dot)(const Vec3 *x, const Vec3 *y)
+{
+    return x->x*y->x + x->y*y->y + x->z*y->z; 
+}
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v4_dot)(const Vec4 *x, const Vec4 *y)
+{
+    return x->x*y->x + x->y*y->y + x->z*y->z + x->w*y->w; 
+}
+
+static inline f32
+isa_linalg__f32_array_square(f32 *arr, u8 dim)
+{
+    f32 square = 0.0;
+    for(u8 i = 0; i < dim; ++i){
+        square += arr[i] * arr[i];
+    }
+    
+    return square;
+}
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v_norm)(const Vec *x)
+{
+    return isa_linalg__f32_array_square(x->vec, x->dim);
+}
+
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v3_norm)(const Vec3 *x)
+{
+    // TODO(Ingar): @Profiling
+    // This vs array_square.
+    f32 square = x->x*x->x + x->y*x->y + x->z*x->z;
+    return ISA_LINALG_SQRTF(square);
+}
+
+ISALG__PUBLICDEF inline f32
+ISA_LINALG_DECORATE(v4_norm)(const Vec4 *x)
+{
+    // TODO(Ingar): @Profiling
+    // Same as above
+    f32 square = x->x*x->x + x->y*x->y + x->z*x->z + x->z*x->z;
+    return ISA_LINALG_SQRTF(square);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v_normalize)(Vec *x)
+{
+    f32 x_norm = v_norm(x);
+    v_scale(x, x_norm);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v3_normalize)(Vec3 *x)
+{
+    f32 x_norm = v3_norm(x);
+    v3_scale(x, x_norm);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v4_normalize)(Vec4 *x)
+{
+    f32 x_norm = v4_norm(x);
+    v4_scale(x, x_norm);
+}
+
+
+// Quaternion operations // 
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(quatinv)(Vec4 *x)
+{
+    x->r = -x->r;
+    x->i = -x->i;
+    x->j = -x->j;
+    x->k = -x->k;
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(quatprod)(const Vec4 *q, const Vec4 *p, Vec4 *out)
+{
+    out->vec[0] = q->vec[3] * p->vec[0] + q->vec[2] * p->vec[1] -
+        q->vec[1] * p->vec[2] + q->vec[0] * p->vec[3];
+    
+    out->vec[1] = -q->vec[2] * p->vec[0] + q->vec[3] * p->vec[1] +
+        q->vec[0] * p->vec[2] + q->vec[1] * p->vec[3];
+    
+    out->vec[2] = q->vec[1] * p->vec[0] - q->vec[0] * p->vec[1] +
+        q->vec[3] * p->vec[2] + q->vec[2] * p->vec[3];
+    
+    out->vec[3] = -q->vec[0] * p->vec[0] - q->vec[1] * p->vec[1] -
+        q->vec[2] * p->vec[2] + q->vec[3] * p->vec[3];
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(q2euler)(const Vec4 *q, Vec3 *out)
+{
+    const f32 Pi32 = ISALG__PI32;
+    
+    out->vec[0] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[0] + q->vec[1] * q->vec[2]),
+                                   1 - 2 * (q->vec[0] * q->vec[0] + q->vec[1] * q->vec[1]));
+    
+    float sin_term = 2 * (q->vec[3] * q->vec[1] - q->vec[0] * q->vec[2]);
+    if (sin_term >= 1) { // Guard against input outside asin range
+        out->vec[1] = Pi32 / 2.0f;
+    } else if (sin_term <= -1) {
+        out->vec[1] = -Pi32 / 2.0f;
+    } else {
+        out->vec[1] = ISA_LINALG_ASIN(sin_term);
+    }
+    
+    out->vec[2] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[2] + q->vec[0] * q->vec[1]),
+                                   1 - 2 * (q->vec[1] * q->vec[1] + q->vec[2] * q->vec[2]));
+}
+
 
 
 // Matrix multiplication //
