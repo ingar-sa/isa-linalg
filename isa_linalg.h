@@ -45,8 +45,8 @@
 
 // Wrappers for stdlib functions. You can define these if you want to
 // use your own or the double precision versions of these functions.
-#ifndef ISA_LINALG_SQRTF
-#define ISA_LINALG_SQRTF(radicand) sqrtf(radicand)
+#ifndef ISA_LINALG_SQRT
+#define ISA_LINALG_SQRT(radicand) sqrtf(radicand)
 #endif
 #ifndef ISA_LINALG_POW
 #define ISA_LINALG_POW(base, exponent) powf(base, exponent)
@@ -223,12 +223,14 @@ ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4v4_mult)(Mat4 *A, Vec4 *x);
 
 
 // Printing //
+#ifdef ISA_LINALG_PRINTF
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v_printf) (Vec  *vec);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v3_printf)(Vec3 *vec3);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v4_printf)(Vec4 *vec4);
 
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_printf)(Mat3 *mat3);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_printf)(Mat4 *mat4);
+#endif
 
 #endif //ISA_LINALG_INCLUDE_H
 
@@ -462,7 +464,7 @@ ISA_LINALG_DECORATE(v3_norm)(const Vec3 *x)
     // TODO(Ingar): @Profiling
     // This vs array_square.
     f32 square = x->x*x->x + x->y*x->y + x->z*x->z;
-    return ISA_LINALG_SQRTF(square);
+    return ISA_LINALG_SQRT(square);
 }
 
 ISALG__PUBLICDEF inline f32
@@ -471,7 +473,7 @@ ISA_LINALG_DECORATE(v4_norm)(const Vec4 *x)
     // TODO(Ingar): @Profiling
     // Same as above
     f32 square = x->x*x->x + x->y*x->y + x->z*x->z + x->z*x->z;
-    return ISA_LINALG_SQRTF(square);
+    return ISA_LINALG_SQRT(square);
 }
 
 ISALG__PUBLICDEF inline void

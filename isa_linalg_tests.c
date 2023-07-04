@@ -404,7 +404,7 @@ int main(void)
     test_vec4();
     test_mat3();
     test_mat4();
-    test_how_printfs_looks();
+    //test_how_printfs_looks();
     
     return 0;
 }
