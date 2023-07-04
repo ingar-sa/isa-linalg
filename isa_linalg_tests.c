@@ -16,19 +16,23 @@ typedef int64_t  i64;
 typedef float    f32;
 typedef double   f64;
 
-#define ISA_LINALG_IMPLEMENTATION
+#define ISA_LINALG_STATIC
 #define ISA_LINALG_PRINTF
 #define ISA_LINALG_DECORATE(name) name
+#define ISA_LINALG_IMPLEMENTATION
 #include "isa_linalg.h"
 
 #define STB_SPRINTF_IMPLEMENTATION
 #include "stb_sprintf.h"
 
-
+// This is the maximum length of a float/double that stb_sprintf will write.
+// If the number does not fit in the decimal format, it expects you to use scientific notation
 // '-' + 18 digits + '.' + 18 digits + '\0'
 #define STB_FLT_STR_LEN (39)
+
 // NOTE(Ingar): Since STB_FLT_STR_LEN contains a char for the null-terminator, the
 // following defs technically contain more chars than necessary, but better safe than sorry!
+
 #define VEC3_STRING_LEN (STB_FLT_STR_LEN*3 + 3)       // Three floats, two spaces and null-terminator
 #define VEC4_STRING_LEN (STB_FLT_STR_LEN*4 + 4)       // Four floats, three spaces and null-terminator
 #define MAT3_STRING_LEN (STB_FLT_STR_LEN*9 + 6 + 3)   // Nine floats, six spaces, two new-lines and null-terminator
@@ -36,12 +40,12 @@ typedef double   f64;
 
 static void v3_sprintf(char *String, Vec3 *v3)
 {
-    stbsp_sprintf(String, "%.5f %.5f %.5f", v3->x, v3->y, v3->z);
+    stbsp_sprintf(String, ISA_LINALG_V3_FORMAT_STR, v3->x, v3->y, v3->z);
 }
 
 static void v4_sprintf(char *String, Vec4 *v4)
 {
-    stbsp_sprintf(String, "%.5f %.5f %.5f %.5f", v4->x, v4->y, v4->z, v4->w);
+    stbsp_sprintf(String, ISA_LINALG_V4_FORMAT_STR, v4->x, v4->y, v4->z, v4->w);
 }
 
 static void m3_sprintf(char *String, Mat3 *m3)
@@ -50,10 +54,7 @@ static void m3_sprintf(char *String, Mat3 *m3)
     Vec3 v2 = m3->v2;
     Vec3 v3 = m3->v3;
     
-    stbsp_sprintf(String,
-                  "%.5f %.5f %.5f\n"
-                  "%.5f %.5f %.5f\n"
-                  "%.5f %.5f %.5f",
+    stbsp_sprintf(String, ISA_LINALG_M3_FORMAT_STR,
                   v1.x, v1.y, v1.z,
                   v2.x, v2.y, v2.z,
                   v3.x, v3.y, v3.z);
@@ -65,11 +66,8 @@ static void m4_sprintf(char *String, Mat4 *m4)
     Vec4 v2 = m4->v2;
     Vec4 v3 = m4->v3;
     Vec4 v4 = m4->v4;
-    stbsp_sprintf(String, 
-                  "%.5f %.5f %.5f %.5f\n"
-                  "%.5f %.5f %.5f %.5f\n"
-                  "%.5f %.5f %.5f %.5f\n"
-                  "%.5f %.5f %.5f %.5f",
+    
+    stbsp_sprintf(String, ISA_LINALG_M4_FORMAT_STR,
                   v1.x, v1.y, v1.z, v1.w,
                   v2.x, v2.y, v2.z, v2.w,
                   v3.x, v3.y, v3.z, v3.w,
@@ -341,7 +339,7 @@ static void test_mat4(void)
     printf("\n\n");
 }
 
-static void test_how_printfs_looks(void)
+static void test_how_printfs_look(void)
 {
     printf("----------Tests for printfs----------\n\n");
     
@@ -404,7 +402,7 @@ int main(void)
     test_vec4();
     test_mat3();
     test_mat4();
-    //test_how_printfs_looks();
+    test_how_printfs_look();
     
     return 0;
 }
