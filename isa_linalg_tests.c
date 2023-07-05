@@ -3,19 +3,6 @@
 #include <string.h>
 #include <float.h>
 
-typedef uint8_t  u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-typedef int8_t   i8;
-typedef int16_t  i16;
-typedef int32_t  i32;
-typedef int64_t  i64;
-
-typedef float    f32;
-typedef double   f64;
-
 #define ISA_LINALG_STATIC
 #define ISA_LINALG_PRINTF
 #define ISA_LINALG_DECORATE(name) name
@@ -37,6 +24,20 @@ typedef double   f64;
 #define VEC4_STRING_LEN (STB_FLT_STR_LEN*4 + 4)       // Four floats, three spaces and null-terminator
 #define MAT3_STRING_LEN (STB_FLT_STR_LEN*9 + 6 + 3)   // Nine floats, six spaces, two new-lines and null-terminator
 #define MAT4_STRING_LEN (STB_FLT_STR_LEN*16 + 12 + 4) // 16 floats, 12 spaces, three new-lines and null-terminator
+
+typedef uint8_t  u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t   i8;
+typedef int16_t  i16;
+typedef int32_t  i32;
+typedef int64_t  i64;
+
+typedef float    f32;
+typedef double   f64;
+
 
 static void v3_sprintf(char *String, Vec3 *v3)
 {
@@ -120,7 +121,6 @@ static void test_vec3(void)
     printf("Vector 2: %s\n", sv2);
     memset(sv1, 0, VEC3_STRING_LEN);
     memset(sv2, 0, VEC3_STRING_LEN);
-    
     
     // Test v3_scale
     v3_scale(pv1, 2);
