@@ -131,16 +131,16 @@ typedef union  Mat4 Mat4;
 // For now I'm going to leave the responsibility of allocating memory to the user
 //ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(pass_memory)(u8 *mem, u32 memsize);
 
+// Vector stuff //
 
 // Setting values //
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v_set_zero) (Vec  *vec);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v3_set_zero)(Vec3 *vec);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v4_set_zero)(Vec4 *vec);
 
-ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_set_zero) (Mat  *mat);
-ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_set_zero)(Mat3 *mat3);
-ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_set_zero)(Mat4 *mat4);
-
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v_copy) (Vec  *dest, const Vec  *src);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v3_copy)(Vec3 *dest, const Vec3 *src);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v4_copy)(Vec4 *dest, const Vec4 *src);
 
 // Addition //
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(v_add) (Vec  *x, const Vec  *y);
@@ -184,8 +184,17 @@ ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(quatinv)(Vec4 *x);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(quatprod)(const Vec4 *q, const Vec4 *p, Vec4 *out);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(q2euler) (const Vec4 *q, Vec3 *out);
 
+// Matrix stuff //
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_set_zero) (Mat  *mat);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_set_zero)(Mat3 *mat3);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_set_zero)(Mat4 *mat4);
 
 // Matrix multiplication //
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_identity)(Mat *A);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_identity)(Mat3 *A);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_identity)(Mat4 *A);
+
+
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(mv_mult)  (const Mat  *A, const Vec *x, Vec *out);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x);
@@ -341,25 +350,25 @@ ISA_LINALG_DECORATE(pass_memory)(u8 *mem, u32 memsize)
 
 // Setting values //
 static inline void
-isalg_internal__f32_array_set_zero(f32 *arr, const u8 dim)
+isalg_internal__f32_array_set_elems(f32 *arr, const f32 val, const u8 dim)
 {
     for(u8 i = 0; i < dim; ++i)
     {
-        arr[i] = 0.0;
+        arr[i] = val;
     }
 }
 
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(v_set_zero)(Vec *vec)
 {
-    isalg_internal__f32_array_set_zero(vec->vec, vec->dim);
+    isalg_internal__f32_array_set_elems(vec->vec, 0.0, vec->dim);
 }
 
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(v3_set_zero)(Vec3 *vec)
 {
     // @Profiling Setting them manually vs using the loop
-    isalg_internal__f32_array_set_zero(vec->vec, 3);
+    isalg_internal__f32_array_set_elems(vec->vec, 0.0, 3);
     //vec->x = 0.0; vec->y = 0.0; vec->z = 0.0;
 }
 
@@ -367,8 +376,35 @@ ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(v4_set_zero)(Vec4 *vec)
 {
     // @Profiling Same as above
-    isalg_internal__f32_array_set_zero(vec->vec, 4);
+    isalg_internal__f32_array_set_elems(vec->vec, 0, 4);
     //vec->x = 0.0; vec->y = 0.0; vec->z = 0.0; vec->w = 0.0;
+}
+
+static inline void
+isalg_internal__f32_array_copy(f32 *dest, const f32 *src, const u8 dim)
+{
+    for(u8 i = 0; i < dim; ++i)
+    {
+        dest[i] = src[i];
+    }
+}
+
+ISALG__PUBLICDEC inline void
+ISA_LINALG_DECORATE(v_copy)(Vec *dest, const Vec *src)
+{
+    isalg_internal__f32_array_copy(dest->vec, src->vec, dest->dim);
+}
+
+ISALG__PUBLICDEC inline void
+ISA_LINALG_DECORATE(v3_copy)(Vec3 *dest, const Vec3 *src)
+{
+    isalg_internal__f32_array_copy(dest->vec, src->vec, 3);
+}
+
+ISALG__PUBLICDEC inline void
+ISA_LINALG_DECORATE(v4_copy)(Vec4 *dest, const Vec4 *src)
+{
+    isalg_internal__f32_array_copy(dest->vec, src->vec, 4);
 }
 
 
@@ -492,7 +528,7 @@ ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x)
 {
     f32 result[3];
-    isalg_internal__f32_array_set_zero(result, 3);
+    isalg_internal__f32_array_set_elems(result, 0.0, 3);
     isalg_internal__mv_mult(A->mat, x->vec, result, 3, 3);
     
     for(u8 i = 0; i < 3; ++i) { x->vec[i] = result[i]; }
@@ -502,7 +538,7 @@ ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x)
 {
     f32 result[4];
-    isalg_internal__f32_array_set_zero(result, 4);
+    isalg_internal__f32_array_set_elems(result, 0.0, 4);
     isalg_internal__mv_mult(A->mat, x->vec, result, 4, 4);
     
     for(u8 i = 0; i < 4; ++i) { x->vec[i] = result[i]; }
@@ -707,19 +743,19 @@ ISA_LINALG_DECORATE(m_set_elem)(f32 *mat, const f32 val,
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(m_set_zero)(Mat *mat)
 {
-    isalg_internal__f32_array_set_zero(mat->mat, mat->m*mat->n);
+    isalg_internal__f32_array_set_elems(mat->mat, 0.0, mat->m*mat->n);
 }
 
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(m3_set_zero)(Mat3 *mat3)
 {
-    isalg_internal__f32_array_set_zero(mat3->mat, 9);
+    isalg_internal__f32_array_set_elems(mat3->mat, 0.0, 9);
 }
 
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(m4_set_zero)(Mat4 *mat4)
 {
-    isalg_internal__f32_array_set_zero(mat4->mat, 16);
+    isalg_internal__f32_array_set_elems(mat4->mat, 0.0, 16);
 }
 
 
@@ -750,6 +786,26 @@ ISA_LINALG_DECORATE(m4_set_diag)(Mat4 *A, const f32 val)
 {
     isalg_internal__m_set_diag(A->mat, val, 4);
 }
+
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m_identity)(Mat *A)
+{
+    isalg_internal__m_set_diag(A->mat, 1.0, A->n);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m3_identity)(Mat3 *A)
+{
+    isalg_internal__m_set_diag(A->mat, 1.0, 3);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m4_identity)(Mat4 *A)
+{
+    isalg_internal__m_set_diag(A->mat, 1.0, 4);
+}
+
 
 
 static inline void
@@ -946,7 +1002,7 @@ isalg_internal__m3_skew_squared(const Vec3 *x, Mat3 *out)
     f32 x_square = isalg_internal__f32_square_array(x->vec, 3);
     
     Mat3 A;
-    isalg_internal__f32_array_set_zero(A.mat, 9);
+    isalg_internal__f32_array_set_elems(A.mat, 0, 9);
     isalg_internal__m_set_diag(A.mat, x_square, 3);
     
     isalg_internal__v_outer_prod(x->vec, x->vec, out->mat, 3);
