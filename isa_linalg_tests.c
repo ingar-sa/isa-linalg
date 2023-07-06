@@ -269,7 +269,7 @@ static void test_mat3(void)
     Vec3 v1;
     v1.x = 1; v1.y = 2; v1.z = 3;
     
-    m3v3_mult(pm1, &v1);
+    m3v3_mult(pm1, &v1, &v1);
     v3_sprintf(sv1, &v1);
     
     printf("\nm3v3_mult\n");
@@ -328,7 +328,7 @@ static void test_mat4(void)
     Vec4 v1;
     v1.x = 1; v1.y = 2; v1.z = 3; v1.w = 4;
     
-    m4v4_mult(pm1, &v1);
+    m4v4_mult(pm1, &v1, &v1);
     v4_sprintf(sv1, &v1);
     
     printf("\nm4v4_mult\n");

@@ -28,6 +28,7 @@
 //
 // ARM Cortex-R4F, which is used on FramSat-1, has a 32-byte cache line, so I want to optimize for that cache line size
 //      Note, since it was a bit hard to find: the word size on the R4F is 32 bits, and the cache line size is 8 words
+// Some of the functions with an "out" parameter could maybe allocate a local array and then change the Vec/Mat
 
 #ifndef ISA_LINALG_INCLUDE_H
 #define ISA_LINALG_INCLUDE_H
@@ -181,16 +182,18 @@ ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(quatprod)(const Vec4 *q, const 
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(q2euler) (const Vec4 *q, Vec3 *out);
 
 
-
 // Matrix stuff //
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_set_zero) (Mat  *mat);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_set_zero)(Mat3 *mat3);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_set_zero)(Mat4 *mat4);
 
-
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_set_from_array) (Mat  *mat,  const float *arr);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_set_from_array)(Mat3 *mat3, const float *arr);
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_set_from_array)(Mat4 *mat4, const float *arr);
+
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_transpose) (const Mat *A, Mat *out);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3_transpose)(Mat3 *mat3);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_transpose)(Mat4 *mat4);
 
 // Scalar multiplication //
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m_scale) (Mat  *A, const float s);
@@ -205,8 +208,8 @@ ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4_identity)(Mat4 *A);
 
 
 ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(mv_mult)  (const Mat  *A, const Vec *x, Vec *out);
-ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x);
-ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x, Vec3 *out);
+ISALG__PUBLICDEC inline void ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x, Vec4 *out);
 
 
 union Vec3
@@ -498,12 +501,12 @@ static inline void
 isalg_internal__mv_mult(const f32 *A, const f32 *x, f32 *out, 
                         const u8 m, const u8 ncols) 
 {
-    // @Profiling It would be interesting to see how much zeroing out in the loop affects performance
+    // @Profiling It would be interesting to see how much zeroing out in the loop affects performance vs. doing it before
     //  Profiling a "fancier" loop that uses ternary and modulo operations to increment the indices would also be interesting
     u16 nelems = m * ncols;
     
-    u8 x_i     = 0;
-    u8 out_i   = 0;
+    u8 x_i   = 0;
+    u8 out_i = 0;
     
     for(u16 A_i = 0; A_i < nelems; ++A_i)
     {
@@ -517,30 +520,35 @@ isalg_internal__mv_mult(const f32 *A, const f32 *x, f32 *out,
     }
 }
 
+// out != x for this function, since the internal function would override values the vector 
+// it is getting the factor from with the computation results. This is because MVC doesn't 
+//support arrays runtime-determined sizes,something that is a recurring problem for this library
+// Thank you Microsoft, very cool.
 ISALG__PUBLICDEF inline void
 ISA_LINALG_DECORATE(mv_mult)(const Mat *A, const Vec *x, Vec *out)
 {
     isalg_internal__mv_mult(A->mat, x->vec, out->vec, A->m, A->n);
 }
 
+// out can equal x in this and Vec4's function since we know the size of the array at compile time
 ISALG__PUBLICDEF inline void
-ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x)
+ISA_LINALG_DECORATE(m3v3_mult)(const Mat3 *A, Vec3 *x, Vec3 *out)
 {
     f32 result[3];
     isalg_internal__f32_array_set_elems(result, 0.0, 3);
     isalg_internal__mv_mult(A->mat, x->vec, result, 3, 3);
     
-    for(u8 i = 0; i < 3; ++i) { x->vec[i] = result[i]; }
+    for(u8 i = 0; i < 3; ++i) { out->vec[i] = result[i]; }
 }
 
 ISALG__PUBLICDEF inline void
-ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x)
+ISA_LINALG_DECORATE(m4v4_mult)(const Mat4 *A, Vec4 *x, Vec4 *out)
 {
     f32 result[4];
     isalg_internal__f32_array_set_elems(result, 0.0, 4);
     isalg_internal__mv_mult(A->mat, x->vec, result, 4, 4);
     
-    for(u8 i = 0; i < 4; ++i) { x->vec[i] = result[i]; }
+    for(u8 i = 0; i < 4; ++i) { out->vec[i] = result[i]; }
 }
 
 
@@ -1001,138 +1009,161 @@ isalg_internal__f32_array_transpose(const f32 *A, f32 *out,
 }
 
 ISALG__PUBLICDEF inline void
-ISA_LINALG_DECORATE(m_transpose)(Mat *
-                                 
-                                 static inline void
-                                 isalg_internal__m3_skew(const Vec3 *x, Mat3 *out)
-                                 {
-                                     isalg_internal__m_set_diag(out->mat, 0, 3);
-                                     
-                                     out->v1.y = -x->z; out->v1.z =  x->y;
-                                     out->v2.x =  x->z; out->v2.z = -x->x;
-                                     out->v3.x = -x->y; out->v3.y =  x->x;
-                                 }
-                                 
-                                 static inline void
-                                 isalg_internal__m3_skew_squared(const Vec3 *x, Mat3 *out)
-                                 {
-                                     // @Profiling It would be interesting to look at the disassembly for this sequence of operations vs
-                                     // set_zero -> get square -> set_diag, and see if in this sequence the compiler combines the setting of the
-                                     // array to zero with setting the diagonal to x_square. Might be a bit much to ask of the optimizer, but
-                                     // would be cool if it did.
-                                     f32 x_square = isalg_internal__f32_square_array(x->vec, 3);
-                                     
-                                     Mat3 A;
-                                     isalg_internal__f32_array_set_elems(A.mat, 0, 9);
-                                     isalg_internal__m_set_diag(A.mat, x_square, 3);
-                                     
-                                     isalg_internal__v_outer_prod(x->vec, x->vec, out->mat, 3);
-                                     isalg_internal__f32_sub_arrays(out->mat, (const f32 *)A.mat, 9);
-                                 }
-                                 
-                                 static inline void
-                                 isalg_internal__m_solve_LUP(const Mat *L, const Mat *U, 
-                                                             const Vec *pi, const Vec *b,
-                                                             Vec *y, Vec *x)
-                                 {
-                                     for(u8 i = 0; i < L->n; ++i)
-                                     {
-                                         u8 b_i = (u8)(pi->vec[i] + 0.5);
-                                         y->vec[i] = b->vec[b_i];
-                                         
-                                         for(u8 j = 0; j < i; ++j)
-                                         {
-                                             const f32 L_ij = *isalg_internal__m_get_elem_const(L->mat, L->n, i, j);
-                                             y->vec[i] -= L_ij * y->vec[j];
-                                         }
-                                     }
-                                     
-                                     for(u8 i = 0; i <  L->n; ++i)
-                                     {
-                                         for(u8 j = 0; j < i; ++j)
-                                         {
-                                             const f32 U_ij = *isalg_internal__m_get_elem_const(U->mat, U->n, i, j);
-                                             y->vec[i] -= U_ij * x->vec[j];
-                                         }
-                                         
-                                         const f32 U_ii = *isalg_internal__m_get_elem_const(U->mat, U->n, i, i);
-                                         x->vec[i] = y->vec[i] / U_ii;
-                                     }
-                                 }
-                                 
-                                 
-                                 
-                                 
-                                 //////////////////////////////
-                                 //         Printing         //
-                                 //////////////////////////////
+ISA_LINALG_DECORATE(m_transpose)(const Mat *A, Mat *out)
+{
+    // Need to do it this way atm with an output matrix, since MVC doesn't
+    // support arrays with runtime-determined size...
+    isalg_internal__f32_array_transpose(A->mat, out->mat, out->m, out->n);
+}
+
+// While it would be nice with consistent parameters for the type-variants
+// of the different functions, saving space is the name of the game
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m3_transpose)(Mat3 *mat3)
+{
+    f32 temp[9];
+    isalg_internal__f32_array_transpose(mat3->mat, temp, 3, 3);
+    isalg_internal__f32_array_copy(mat3->mat, temp, 9);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m4_transpose)(Mat4 *mat4)
+{
+    f32 temp[16];
+    isalg_internal__f32_array_transpose(mat4->mat, temp, 4, 4);
+    isalg_internal__f32_array_copy(mat4->mat, temp, 4);
+}
+
+
+static inline void
+isalg_internal__m3_skew(const Vec3 *x, Mat3 *out)
+{
+    isalg_internal__m_set_diag(out->mat, 0, 3);
+    
+    out->v1.y = -x->z; out->v1.z =  x->y;
+    out->v2.x =  x->z; out->v2.z = -x->x;
+    out->v3.x = -x->y; out->v3.y =  x->x;
+}
+
+static inline void
+isalg_internal__m3_skew_squared(const Vec3 *x, Mat3 *out)
+{
+    // @Profiling It would be interesting to look at the disassembly for this sequence of operations vs
+    // set_zero -> get square -> set_diag, and see if in this sequence the compiler combines the setting of the
+    // array to zero with setting the diagonal to x_square. Might be a bit much to ask of the optimizer, but
+    // would be cool if it did.
+    f32 x_square = isalg_internal__f32_square_array(x->vec, 3);
+    
+    Mat3 A;
+    isalg_internal__f32_array_set_elems(A.mat, 0, 9);
+    isalg_internal__m_set_diag(A.mat, x_square, 3);
+    
+    isalg_internal__v_outer_prod(x->vec, x->vec, out->mat, 3);
+    isalg_internal__f32_sub_arrays(out->mat, (const f32 *)A.mat, 9);
+}
+
+static inline void
+isalg_internal__m_solve_LUP(const Mat *L, const Mat *U, 
+                            const Vec *pi, const Vec *b,
+                            Vec *y, Vec *x)
+{
+    for(u8 i = 0; i < L->n; ++i)
+    {
+        u8 b_i = (u8)(pi->vec[i] + 0.5);
+        y->vec[i] = b->vec[b_i];
+        
+        for(u8 j = 0; j < i; ++j)
+        {
+            const f32 L_ij = *isalg_internal__m_get_elem_const(L->mat, L->n, i, j);
+            y->vec[i] -= L_ij * y->vec[j];
+        }
+    }
+    
+    for(u8 i = 0; i <  L->n; ++i)
+    {
+        for(u8 j = 0; j < i; ++j)
+        {
+            const f32 U_ij = *isalg_internal__m_get_elem_const(U->mat, U->n, i, j);
+            y->vec[i] -= U_ij * x->vec[j];
+        }
+        
+        const f32 U_ii = *isalg_internal__m_get_elem_const(U->mat, U->n, i, i);
+        x->vec[i] = y->vec[i] / U_ii;
+    }
+}
+
+
+
+
+//////////////////////////////
+//         Printing         //
+//////////////////////////////
 #ifdef ISA_LINALG_PRINTF
-                                 
-                                 ISALG__PUBLICDEF inline void 
-                                 ISA_LINALG_DECORATE(v_printf)(const Vec *vec)
-                                 {
-                                     for(int i = 0; i < vec->dim; ++i) {
-                                         ISA_LINALG_PRINTF_FUN("%f", vec->vec[i]);
-                                     }
-                                 }
-                                 
-                                 ISALG__PUBLICDEF inline void
-                                 ISA_LINALG_DECORATE(v3_printf)(const Vec3 *vec3)
-                                 {
-                                     ISA_LINALG_PRINTF_FUN(ISA_LINALG_V3_FORMAT_STR,
-                                                           vec3->x, vec3->y, vec3->z);
-                                 }
-                                 
-                                 ISALG__PUBLICDEF inline void
-                                 ISA_LINALG_DECORATE(v4_printf)(const Vec4 *vec4)
-                                 {
-                                     ISA_LINALG_PRINTF_FUN(ISA_LINALG_V4_FORMAT_STR,
-                                                           vec4->x, vec4->y, vec4->z, vec4->w);
-                                 }
-                                 
-                                 ISALG__PUBLICDEF inline void
-                                 ISA_LINALG_DECORATE(m3_printf)(const Mat3 *mat3)
-                                 {
-                                     Vec3 v1 = mat3->v1;
-                                     Vec3 v2 = mat3->v2;
-                                     Vec3 v3 = mat3->v3;
-                                     
-                                     ISA_LINALG_PRINTF_FUN(ISA_LINALG_M3_FORMAT_STR,
-                                                           v1.x, v1.y, v1.z,
-                                                           v2.x, v2.y, v2.z,
-                                                           v3.x, v3.y, v3.z);
-                                 }
-                                 
-                                 ISALG__PUBLICDEF inline void
-                                 ISA_LINALG_DECORATE(m4_printf)(const Mat4 *mat4)
-                                 {
-                                     Vec4 v1 = mat4->v1;
-                                     Vec4 v2 = mat4->v2;
-                                     Vec4 v3 = mat4->v3;
-                                     Vec4 v4 = mat4->v4;
-                                     
-                                     ISA_LINALG_PRINTF_FUN(ISA_LINALG_M4_FORMAT_STR,
-                                                           v1.x, v1.y, v1.z, v1.w,
-                                                           v2.x, v2.y, v2.z, v2.w,
-                                                           v3.x, v3.y, v3.z, v3.w,
-                                                           v4.x, v4.y, v4.z, v4.w);
-                                 }
-                                 
+
+ISALG__PUBLICDEF inline void 
+ISA_LINALG_DECORATE(v_printf)(const Vec *vec)
+{
+    for(int i = 0; i < vec->dim; ++i) {
+        ISA_LINALG_PRINTF_FUN("%f", vec->vec[i]);
+    }
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v3_printf)(const Vec3 *vec3)
+{
+    ISA_LINALG_PRINTF_FUN(ISA_LINALG_V3_FORMAT_STR,
+                          vec3->x, vec3->y, vec3->z);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(v4_printf)(const Vec4 *vec4)
+{
+    ISA_LINALG_PRINTF_FUN(ISA_LINALG_V4_FORMAT_STR,
+                          vec4->x, vec4->y, vec4->z, vec4->w);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m3_printf)(const Mat3 *mat3)
+{
+    Vec3 v1 = mat3->v1;
+    Vec3 v2 = mat3->v2;
+    Vec3 v3 = mat3->v3;
+    
+    ISA_LINALG_PRINTF_FUN(ISA_LINALG_M3_FORMAT_STR,
+                          v1.x, v1.y, v1.z,
+                          v2.x, v2.y, v2.z,
+                          v3.x, v3.y, v3.z);
+}
+
+ISALG__PUBLICDEF inline void
+ISA_LINALG_DECORATE(m4_printf)(const Mat4 *mat4)
+{
+    Vec4 v1 = mat4->v1;
+    Vec4 v2 = mat4->v2;
+    Vec4 v3 = mat4->v3;
+    Vec4 v4 = mat4->v4;
+    
+    ISA_LINALG_PRINTF_FUN(ISA_LINALG_M4_FORMAT_STR,
+                          v1.x, v1.y, v1.z, v1.w,
+                          v2.x, v2.y, v2.z, v2.w,
+                          v3.x, v3.y, v3.z, v3.w,
+                          v4.x, v4.y, v4.z, v4.w);
+}
+
 #endif // ISA_LINALG_PRINTF
-                                 
-                                 // Macro cleanup
+
+// Macro cleanup
 #undef u8
 #undef u16
 #undef u32
 #undef u64
-                                 
+
 #undef i8
 #undef i16
 #undef i32
 #undef i64
-                                 
+
 #undef f32
 #undef f64
-                                 
+
 #endif // ISA_LINALG_IMPLEMENTATION
-                                 
