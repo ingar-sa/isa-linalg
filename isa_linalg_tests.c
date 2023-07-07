@@ -89,11 +89,11 @@ static void test_vec3(void)
     
     // Test v3_set_zero
     Vec3  v1, v2;
-    Vec3* pv1 = &v1;
-    Vec3* pv2 = &v2;
+    Vec3 *pv1 = &v1;
+    Vec3 *pv2 = &v2;
     
-    v3_set_zero(pv1);
-    v3_set_zero(pv2);
+    set_all(v1.vec, 0, 3);
+    set_all(v2.vec, 0, 3);
     
     v3_sprintf(sv1, pv1);
     v3_sprintf(sv2, pv2);
@@ -110,7 +110,7 @@ static void test_vec3(void)
     v1.x = 1; v1.y = 1; v1.z = 1;
     v2.x = 1; v2.y = 2; v2.z = 3;
     
-    v3_add(pv2, pv1);
+    add(v2.vec, v1.vec, 3);
     
     v3_sprintf(sv1, pv1);
     v3_sprintf(sv2, pv2);
@@ -123,7 +123,7 @@ static void test_vec3(void)
     memset(sv2, 0, VEC3_STRING_LEN);
     
     // Test v3_scale
-    v3_scale(pv1, 2);
+    scalar_mult(v1.vec, 2, 3);
     
     v3_sprintf(sv1, pv1);
     
@@ -134,7 +134,7 @@ static void test_vec3(void)
     
     
     // Test v3_sub
-    v3_sub(pv1, pv2);
+    sub(v1.vec, v2.vec, 3);
     
     v3_sprintf(sv1, pv1);
     v3_sprintf(sv2, pv2);
@@ -162,11 +162,12 @@ static void test_vec4(void)
     
     // Test v4_set_zero
     Vec4  v1, v2;
-    Vec4* pv1 = &v1;
-    Vec4* pv2 = &v2;
+    Vec4 *pv1 = &v1;
+    Vec4 *pv2 = &v2;
     
-    v4_set_zero(pv1);
-    v4_set_zero(pv2);
+    
+    set_all(v1.vec, 0, 4);
+    set_all(v2.vec, 0, 4);
     
     v4_sprintf(sv1, pv1);
     v4_sprintf(sv2, pv2);
@@ -183,7 +184,7 @@ static void test_vec4(void)
     v1.x = 1; v1.y = 1; v1.z = 1; v1.w = 1;
     v2.x = 1; v2.y = 2; v2.z = 3; v2.w = 4;
     
-    v4_add(pv2, pv1);
+    add(v2.vec, v1.vec, 3);
     
     v4_sprintf(sv1, pv1);
     v4_sprintf(sv2, pv2);
@@ -197,7 +198,7 @@ static void test_vec4(void)
     
     
     // Test v4_scale
-    v4_scale(pv1, 2);
+    scalar_mult(v1.vec, 2, 3);
     
     v4_sprintf(sv1, pv1);
     
@@ -208,7 +209,7 @@ static void test_vec4(void)
     
     
     // Test v4_sub
-    v4_sub(pv1, pv2);
+    sub(v1.vec, v2.vec, 3);
     
     v4_sprintf(sv1, pv1);
     v4_sprintf(sv2, pv2);
@@ -238,7 +239,7 @@ static void test_mat3(void)
     Mat3  m1;
     Mat3 *pm1 = &m1;
     
-    m3_set_zero(pm1);
+    set_all(m1.mat, 0, 9);
     m3_sprintf(sm1, pm1);
     
     printf("m3_set_zero\n");
@@ -256,7 +257,7 @@ static void test_mat3(void)
     mv2->x = 2; mv2->y = 2; mv2->z = 2;
     mv3->x = 3; mv3->y = 3; mv3->z = 3;
     
-    m3_scale(pm1, 2);
+    scalar_mult(m1.mat, 2, 9);
     m3_sprintf(sm1, pm1);
     
     printf("\nm3_scale\n");
@@ -269,7 +270,7 @@ static void test_mat3(void)
     Vec3 v1;
     v1.x = 1; v1.y = 2; v1.z = 3;
     
-    m3v3_mult(pm1, &v1, &v1);
+    mv_mult(m1.mat, v1.vec, v1.vec, 3, 3);
     v3_sprintf(sv1, &v1);
     
     printf("\nm3v3_mult\n");
@@ -295,7 +296,7 @@ static void test_mat4(void)
     Mat4  m1;
     Mat4 *pm1 = &m1;
     
-    m4_set_zero(pm1);
+    set_all(m1.mat, 0, 9);
     m4_sprintf(sm1, pm1);
     
     printf("m4_set_zero\n");
@@ -315,7 +316,7 @@ static void test_mat4(void)
     mv3->x = 3; mv3->y = 3; mv3->z = 3; mv3->w = 3;
     mv4->x = 4; mv4->y = 4; mv4->z = 4; mv4->w = 4;
     
-    m4_scale(pm1, 2);
+    scalar_mult(m1.mat, 2, 16);
     m4_sprintf(sm1, pm1);
     
     printf("\nm4_scale\n");
@@ -328,7 +329,7 @@ static void test_mat4(void)
     Vec4 v1;
     v1.x = 1; v1.y = 2; v1.z = 3; v1.w = 4;
     
-    m4v4_mult(pm1, &v1, &v1);
+    mv_mult(m1.mat, v1.vec, v1.vec, 4, 4);
     v4_sprintf(sv1, &v1);
     
     printf("\nm4v4_mult\n");
