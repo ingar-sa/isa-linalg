@@ -65,9 +65,6 @@
 #endif
 #endif
 
-#include <stdint.h>
-#include <math.h>
-
 // Define these if you want the types to be printed in a different way
 // Note that they MUST have the same number of arguments in the same order
 // if you want to use the provided printf functions
@@ -98,6 +95,12 @@
 "%f %f %f %f\n"\
 "%f %f %f %f\n"\
 "%f %f %f %f\n"
+#endif
+
+#include <stdint.h> // For integer types
+
+#ifndef ISA_LINALG_NO_STD_MATH
+#include <math.h>
 #endif
 
 // Wrappers for stdlib functions. You can define these if you want to
@@ -143,32 +146,32 @@ ISALG__PUBLICDEC void
 ISA_LINALG_DECORATE(set_all)(float *arr, const float val, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(copy)(float *dest, const float *src, const uint8_t dim);
+ISA_LINALG_DECORATE(array_copy)(const float *src, float *dest, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(add)(float *a, const float *b, const uint8_t dim);
+ISA_LINALG_DECORATE(array_add)(float *a, const float *b, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(sub)(float *a, const float *b, const uint8_t dim);
+ISA_LINALG_DECORATE(array_sub)(float *a, const float *b, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(scalar_mult)(float *a, const float s, const uint8_t dim);
+ISA_LINALG_DECORATE(scale)(float *a, const float s, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(mv_mult)(const float *A, const float *x, float *out,
+ISA_LINALG_DECORATE(mv_mult)(const float *A, const float *x, float *V_out,
                              const uint8_t m, const uint8_t n);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(v_outer_prod)(const float *x, const float *y, 
-                                  float *out, const uint8_t v_dim);
+ISA_LINALG_DECORATE(v_outer_prod)(const float *v, const float *w, 
+                                  float *M_out, const uint8_t v_dim);
 
 
 // Vector Operations //
 ISALG__PUBLICDEC float
-ISA_LINALG_DECORATE(v_dot)(const float *x, const float *y, uint8_t dim);
+ISA_LINALG_DECORATE(v_dot)(const float *v, const float *w, uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE (v3_cross)(const Vec3 *x, const Vec3 *y, Vec3 *out);
+ISA_LINALG_DECORATE (v3_cross)(const Vec3 *v, const Vec3 *w, Vec3 *V_out);
 
 ISALG__PUBLICDEC float
 ISA_LINALG_DECORATE(v_norm)(const float *vec, const uint8_t dim);
@@ -179,27 +182,27 @@ ISA_LINALG_DECORATE (v_normalize)(float *vec, const uint8_t dim);
 
 // Quaternion operations //
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(quat_inv)(Vec4 *x);
+ISA_LINALG_DECORATE(quat_inv)(Vec4 *q);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(quat_prod)(const Vec4 *q, const Vec4 *p, Vec4 *out);
+ISA_LINALG_DECORATE(quat_prod)(const Vec4 *q, const Vec4 *p, Vec4 *V_out);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(quat2euler)(const Vec4 *q, Vec3 *out);
+ISA_LINALG_DECORATE(quat2euler)(const Vec4 *q, Vec3 *V_out);
 
 
 // Matrix stuff //
 ISALG__PUBLICDEC const float *
-ISA_LINALG_DECORATE(m_get_elem_p_const)(const float *mat, const uint8_t n,
+ISA_LINALG_DECORATE(m_get_elem_p_const)(const float *mat, const uint8_t ncols,
                                         const uint8_t i, const uint8_t j);
 
 ISALG__PUBLICDEC float *
-ISA_LINALG_DECORATE(m_get_elem_p)(float *mat, const uint8_t n,
+ISA_LINALG_DECORATE(m_get_elem_p)(float *mat, const uint8_t ncols,
                                   const uint8_t i, const uint8_t j);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m_set_elem)(float *mat, float val,
-                                const uint8_t n, const uint8_t i, const uint8_t j);
+ISA_LINALG_DECORATE(m_set_elem)(float *mat, float val, const uint8_t ncols,
+                                const uint8_t i, const uint8_t j);
 
 ISALG__PUBLICDEC void
 ISA_LINALG_DECORATE(m_set_diag)(float *mat, const float val, const uint8_t dim);
@@ -207,32 +210,32 @@ ISA_LINALG_DECORATE(m_set_diag)(float *mat, const float val, const uint8_t dim);
 ISALG__PUBLICDEC void
 ISA_LINALG_DECORATE(m_set_square_blocks)(const float *A, const float *B, 
                                          const float *C, const float *D,
-                                         float *out, const uint8_t dim);
+                                         float *M_out, const uint8_t dim);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m_mult)(const float *A, const float *B, float *out,
+ISA_LINALG_DECORATE(m_mult)(const float *A, const float *B, float *M_out,
                             const uint8_t A_m, const uint8_t A_n,  const uint8_t B_n);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m_transpose)(const float *A, float *out, const uint8_t m, const uint8_t n);
+ISA_LINALG_DECORATE(m_transpose)(const float *A, float *M_out, const uint8_t m, const uint8_t n);
 
 ISALG__PUBLICDEC float
 ISA_LINALG_DECORATE(m2_det)(const Mat2 *A);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m2_inverse)(const Mat2 *A, Mat2 *out);
+ISA_LINALG_DECORATE(m2_inverse)(const Mat2 *A, Mat2 *M_out);
 
 ISALG__PUBLICDEC float
 ISA_LINALG_DECORATE(m3_det)(const Mat3 *A);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m3_inverse)(const Mat3 *A, Mat3 *out);
+ISA_LINALG_DECORATE(m3_inverse)(const Mat3 *A, Mat3 *M_out);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m3_skew)(const Vec3 *x, Mat3 *out);
+ISA_LINALG_DECORATE(m3_skew)(const Vec3 *x, Mat3 *M_out);
 
 ISALG__PUBLICDEC void
-ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *x, Mat3 *out);
+ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *x, Mat3 *M_out);
 
 ISALG__PUBLICDEC void
 ISA_LINALG_DECORATE(m_solve_LUP)(const Mat *L, const Mat *U, const Vec *pi,
@@ -405,7 +408,7 @@ ISA_LINALG_DECORATE(set_all)(f32 *arr, const f32 val, const u8 dim)
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(copy)(f32 *dest, const f32 *src, const u8 dim)
+ISA_LINALG_DECORATE(array_copy)(const f32 *src, f32 *dest, const u8 dim)
 {
     for(u8 i = 0; i < dim; ++i)
     {
@@ -432,7 +435,7 @@ ISA_LINALG_DECORATE(sub)(f32 *a, const f32 *b, const u8 dim)
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(scalar_mult)(f32 *a, const f32 s, const u8 dim)
+ISA_LINALG_DECORATE(scale)(f32 *a, const f32 s, const u8 dim)
 {
     for(u8 i = 0; i < dim; ++i)
     {
@@ -441,23 +444,37 @@ ISA_LINALG_DECORATE(scalar_mult)(f32 *a, const f32 s, const u8 dim)
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(mv_mult)(const f32 *A, const f32 *x, f32 *out, 
+ISA_LINALG_DECORATE(mv_mult)(const f32 *A, const f32 *v, f32 *V_out, 
                              const u8 m, const u8 n) 
 {
     u16 nelems = m * n;
     
-    u8 x_i   = 0;
-    u8 out_i = 0;
+    u8 v_i   = 0;
+    u8 o_i = 0;
     
     for(u16 A_i = 0; A_i < nelems; ++A_i)
     {
-        if(x_i == n){
-            x_i = 0;
-            ++out_i;
+        if(v_i == n){
+            v_i = 0;
+            ++o_i;
         }
         
-        out[out_i] += A[A_i] * x[x_i];
-        ++x_i;
+        V_out[o_i] += A[A_i] * v[v_i];
+        ++v_i;
+    }
+}
+
+ISALG__PUBLICDEF void
+ISA_LINALG_DECORATE(v_outer_prod)(const f32 *v, const f32 *w,
+                                  f32 *M_out, const u8 v_dim)
+{
+    for(u8 i = 0; i < v_dim; ++i)
+    {
+        for(u8 j = 0; j < v_dim; ++j)
+        {
+            f32 Mo_ij = v[i] * w[j];
+            ISA_LINALG_DECORATE(m_set_elem)(M_out, Mo_ij, v_dim, i, j);
+        }
     }
 }
 
@@ -469,22 +486,22 @@ ISA_LINALG_DECORATE(mv_mult)(const f32 *A, const f32 *x, f32 *out,
 
 
 ISALG__PUBLICDEF f32
-ISA_LINALG_DECORATE(v_dot)(const f32 *x, const f32 *y, u8 dim)
+ISA_LINALG_DECORATE(v_dot)(const f32 *v, const f32 *w, u8 dim)
 {
     f32 square = 0.0;
     for(u8 i = 0; i < dim; ++i){
-        square += x[i] * y[i];
+        square += v[i] * w[i];
     }
     
     return square;
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(v3_cross)(const Vec3 *x, const Vec3 *y, Vec3 *out)
+ISA_LINALG_DECORATE(v3_cross)(const Vec3 *v, const Vec3 *w, Vec3 *V_out)
 {
-    out->vec[0] = x->vec[1] * y->vec[2] - x->vec[2] * y->vec[1];
-    out->vec[1] = x->vec[2] * y->vec[0] - x->vec[0] * y->vec[2];
-    out->vec[2] = x->vec[0] * y->vec[1] - x->vec[1] * y->vec[0];
+    V_out->vec[0] = v->vec[1] * w->vec[2] - v->vec[2] * w->vec[1];
+    V_out->vec[1] = v->vec[2] * w->vec[0] - v->vec[0] * w->vec[2];
+    V_out->vec[2] = v->vec[0] * w->vec[1] - v->vec[1] * w->vec[0];
 }
 
 ISALG__PUBLICDEF f32
@@ -498,7 +515,7 @@ ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(v_normalize)(f32 *vec, const u8 dim)
 {
     const f32 norm = ISA_LINALG_DECORATE(v_norm)(vec, dim);
-    ISA_LINALG_DECORATE(scalar_mult)(vec, norm, dim);
+    ISA_LINALG_DECORATE(scale)(vec, norm, dim);
 }
 
 
@@ -509,50 +526,50 @@ ISA_LINALG_DECORATE(v_normalize)(f32 *vec, const u8 dim)
 
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(quat_inv)(Vec4 *x)
+ISA_LINALG_DECORATE(quat_inv)(Vec4 *q)
 {
-    x->r = -x->r;
-    x->i = -x->i;
-    x->j = -x->j;
-    x->k = -x->k;
+    q->r = -q->r;
+    q->i = -q->i;
+    q->j = -q->j;
+    q->k = -q->k;
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(quat_prod)(const Vec4 *q, const Vec4 *p, Vec4 *out)
+ISA_LINALG_DECORATE(quat_prod)(const Vec4 *q, const Vec4 *p, Vec4 *V_out)
 {
-    out->vec[0] = q->vec[3] * p->vec[0] + q->vec[2] * p->vec[1] -
+    V_out->vec[0] = q->vec[3] * p->vec[0] + q->vec[2] * p->vec[1] -
         q->vec[1] * p->vec[2] + q->vec[0] * p->vec[3];
     
-    out->vec[1] = -q->vec[2] * p->vec[0] + q->vec[3] * p->vec[1] +
+    V_out->vec[1] = -q->vec[2] * p->vec[0] + q->vec[3] * p->vec[1] +
         q->vec[0] * p->vec[2] + q->vec[1] * p->vec[3];
     
-    out->vec[2] = q->vec[1] * p->vec[0] - q->vec[0] * p->vec[1] +
+    V_out->vec[2] = q->vec[1] * p->vec[0] - q->vec[0] * p->vec[1] +
         q->vec[3] * p->vec[2] + q->vec[2] * p->vec[3];
     
-    out->vec[3] = -q->vec[0] * p->vec[0] - q->vec[1] * p->vec[1] -
+    V_out->vec[3] = -q->vec[0] * p->vec[0] - q->vec[1] * p->vec[1] -
         q->vec[2] * p->vec[2] + q->vec[3] * p->vec[3];
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(quat2euler)(const Vec4 *q, Vec3 *out)
+ISA_LINALG_DECORATE(quat2euler)(const Vec4 *q, Vec3 *V_out)
 {
     const f32 Pi32 = ISALG__PI32;
     
-    out->vec[0] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[0] + q->vec[1] * q->vec[2]),
-                                   1 - (2 * (q->vec[0] * q->vec[0] + q->vec[1] * q->vec[1])));
+    V_out->vec[0] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[0] + q->vec[1] * q->vec[2]),
+                                     1 - (2 * (q->vec[0] * q->vec[0] + q->vec[1] * q->vec[1])));
     
     f32 sin_term = 2 * (q->vec[3] * q->vec[1] - q->vec[0] * q->vec[2]);
     
     if(sin_term >= 1){ // Guard against input outside asin range
-        out->vec[1] = Pi32 / 2.0f;
+        V_out->vec[1] = Pi32 / 2.0f;
     } else if(sin_term <= -1){
-        out->vec[1] = -Pi32 / 2.0f;
+        V_out->vec[1] = -Pi32 / 2.0f;
     } else {
-        out->vec[1] = ISA_LINALG_ASIN(sin_term);
+        V_out->vec[1] = ISA_LINALG_ASIN(sin_term);
     }
     
-    out->vec[2] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[2] + q->vec[0] * q->vec[1]),
-                                   1 - (2 * (q->vec[1] * q->vec[1] + q->vec[2] * q->vec[2])));
+    V_out->vec[2] = ISA_LINALG_ATAN2(2 * (q->vec[3] * q->vec[2] + q->vec[0] * q->vec[1]),
+                                     1 - (2 * (q->vec[1] * q->vec[1] + q->vec[2] * q->vec[2])));
 }
 
 
@@ -563,26 +580,26 @@ ISA_LINALG_DECORATE(quat2euler)(const Vec4 *q, Vec3 *out)
 
 
 ISALG__PUBLICDEF const f32 *
-ISA_LINALG_DECORATE(m_get_elem_p_const)(const f32 *mat, const u8 n,
+ISA_LINALG_DECORATE(m_get_elem_p_const)(const f32 *mat, const u8 ncols,
                                         const u8 i, const u8 j)
 {
-    u16 index = j + (i * n);
+    u16 index = j + (i * ncols);
     return &mat[index];
 }
 
 ISALG__PUBLICDEF f32 *
-ISA_LINALG_DECORATE(m_get_elem_p)(f32 *mat, const u8 n, 
+ISA_LINALG_DECORATE(m_get_elem_p)(f32 *mat, const u8 ncols, 
                                   const u8 i, const u8 j)
 {
-    u16 index = j + (i * n);
+    u16 index = j + (i * ncols);
     return &mat[index];
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m_set_elem)(f32 *mat, f32 val, const u8 n, 
+ISA_LINALG_DECORATE(m_set_elem)(f32 *mat, f32 val, const u8 ncols,
                                 const u8 i, const u8 j)
 {
-    f32 *elem = ISA_LINALG_DECORATE(m_get_elem_p)(mat, n, i, j);
+    f32 *elem = ISA_LINALG_DECORATE(m_get_elem_p)(mat, ncols, i, j);
     *elem = val;
 }
 
@@ -599,7 +616,7 @@ ISA_LINALG_DECORATE(m_set_diag)(f32 *mat, const f32 val, const u8 dim)
 ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(m_set_square_blocks)(const f32 *A, const f32 *B, 
                                          const f32 *C, const f32 *D, 
-                                         f32 *out, const u8 dim)
+                                         f32 *M_out, const u8 dim)
 {
     const f32 *mats[4] = {A, B, C, D};
     
@@ -623,15 +640,15 @@ ISA_LINALG_DECORATE(m_set_square_blocks)(const f32 *A, const f32 *B,
             u16 out_i = j + (i * out_dim);
             u16 mat_i = in_block_j + (in_block_i * dim);
             
-            out[out_i] = mats[mat_idx][mat_i];
+            M_out[out_i] = mats[mat_idx][mat_i];
         }
     }
 }
 
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m_mult)(const f32 *A, const f32 *B,
-                            f32 *out, u8 A_m, u8 A_n, u8 B_n)
+ISA_LINALG_DECORATE(m_mult)(const f32 *A, const f32 *B, f32 *M_out,
+                            u8 A_m, u8 A_n, u8 B_n)
 {
     for(u8 i = 0; i < A_m; ++i)
     {
@@ -643,45 +660,31 @@ ISA_LINALG_DECORATE(m_mult)(const f32 *A, const f32 *B,
                 u8 A_i = k + (i * A_n);
                 u8 B_i = j + (k * B_n);
                 
-                out[o_i] += A[A_i] * B[B_i];
+                M_out[o_i] += A[A_i] * B[B_i];
             }
         }
     }
 }
 
-ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(v_outer_prod)(const f32 *x, const f32 *y, 
-                                  f32 *out, const u8 v_dim)
-{
-    for(u8 i = 0; i < v_dim; ++i)
-    {
-        for(u8 j = 0; j < v_dim; ++j)
-        {
-            f32 *o_ij = ISA_LINALG_DECORATE(m_get_elem_p)(out, v_dim, i, j);
-            *o_ij = x[i] * y[j];
-        }
-    }
-}
 
 ISALG__PUBLICDEF f32
 ISA_LINALG_DECORATE(m2_det)(const Mat2 *A)
 {
     f32 det = (A->a * A->d) - (A->b * A->c);
-    //printf("%f\n", det);
     return det;
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m2_inverse)(const Mat2 *A, Mat2 *out)
+ISA_LINALG_DECORATE(m2_inverse)(const Mat2 *A, Mat2 *M_out)
 {
     f32 det_inv = 1 / ISA_LINALG_DECORATE(m2_det)(A);
     
-    out->a =  A->d;
-    out->b = -A->b;
-    out->c = -A->c;
-    out->d =  A->a;
-    //printf(ISA_LINALG_M2_FORMAT_STR, out->a, out->b, out->c, out->d);
-    ISA_LINALG_DECORATE(scalar_mult)(out->mat, det_inv, 4);
+    M_out->a =  A->d;
+    M_out->b = -A->b;
+    M_out->c = -A->c;
+    M_out->d =  A->a;
+    
+    ISA_LINALG_DECORATE(scale)(M_out->mat, det_inv, 4);
 }
 
 
@@ -699,7 +702,7 @@ ISA_LINALG_DECORATE(m3_det)(const Mat3 *A)
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m3_inverse)(const Mat3 *A, Mat3 *out)
+ISA_LINALG_DECORATE(m3_inverse)(const Mat3 *A, Mat3 *M_out)
 {
     const f32 *A_mat = A->mat;
     f32 A_det = ISA_LINALG_DECORATE(m3_det)(A);
@@ -718,41 +721,39 @@ ISA_LINALG_DECORATE(m3_inverse)(const Mat3 *A, Mat3 *out)
             u8 index3 = col1 + (row2 * 3);
             u8 index4 = col2 + (row1 * 3);
             
-            u8 out_i = j + (j * 3);
-            out->mat[out_i] = (A_mat[index1] * A_mat[index2] -
+            u8 o_i = j + (j * 3);
+            M_out->mat[o_i] = (A_mat[index1] * A_mat[index2] -
                                A_mat[index3] * A_mat[index4]) / A_det;
         }
     }
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m_transpose)(const f32 *A, f32 *out,
+ISA_LINALG_DECORATE(m_transpose)(const f32 *A, f32 *M_out,
                                  const u8 m, const u8 n)
 {
     for(u8 i = 0; i < m; ++i)
     {
         for(u8 j = 0; j < n; ++j)
         {
-            const f32 *A_ij = ISA_LINALG_DECORATE(m_get_elem_p_const)(A, n, i, j);
-            f32 *out_ji = ISA_LINALG_DECORATE(m_get_elem_p)(out, n, j, i);
-            
-            *out_ji = *A_ij;
+            const f32 A_ij = *ISA_LINALG_DECORATE(m_get_elem_p_const)(A, n, i, j);
+            ISA_LINALG_DECORATE(m_set_elem)(M_out, A_ij, n, j, i);
         }
     }
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m3_skew)(const Vec3 *x, Mat3 *out)
+ISA_LINALG_DECORATE(m3_skew)(const Vec3 *x, Mat3 *M_out)
 {
-    ISA_LINALG_DECORATE(m_set_diag)(out->mat, 0, 3);
+    ISA_LINALG_DECORATE(m_set_diag)(M_out->mat, 0, 3);
     
-    out->v1.y = -x->z; out->v1.z =  x->y;
-    out->v2.x =  x->z; out->v2.z = -x->x;
-    out->v3.x = -x->y; out->v3.y =  x->x;
+    M_out->v1.y = -x->z; M_out->v1.z =  x->y;
+    M_out->v2.x =  x->z; M_out->v2.z = -x->x;
+    M_out->v3.x = -x->y; M_out->v3.y =  x->x;
 }
 
 ISALG__PUBLICDEF void
-ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *x, Mat3 *out)
+ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *x, Mat3 *M_out)
 {
     // @Profiling It would be interesting to look at the disassembly for this sequence of operations vs
     // set_zero -> get square -> set_diag, and see if in this sequence the compiler combines the setting of the
@@ -764,8 +765,8 @@ ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *x, Mat3 *out)
     ISA_LINALG_DECORATE(set_all)(A.mat, 0, 9);
     ISA_LINALG_DECORATE(m_set_diag)(A.mat, x_square, 3);
     
-    ISA_LINALG_DECORATE(v_outer_prod)(x->vec, x->vec, out->mat, 3);
-    ISA_LINALG_DECORATE(sub)(out->mat, (const f32 *)A.mat, 9);
+    ISA_LINALG_DECORATE(v_outer_prod)(x->vec, x->vec, M_out->mat, 3);
+    ISA_LINALG_DECORATE(array_sub)(M_out->mat, (const f32 *)A.mat, 9);
 }
 
 ISALG__PUBLICDEF void
@@ -823,9 +824,7 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
             }
         }
         
-        if(0==p){
-            return; // A is singular
-        }
+        if(0 == p) return; // A is singular
         
         f32 temp         = pi->vec[k];
         pi->vec[k]       = pi->vec[k_prime];
@@ -839,6 +838,7 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
             ISA_LINALG_DECORATE(m_set_elem)(A->mat, A_kprime_i, A->n, k, i);
             ISA_LINALG_DECORATE(m_set_elem)(A->mat, A_ki, A->n, k_prime, i);
         }
+        
         for(u8 i = k+1; i < A->n; ++i)
         {
             f32 A_kk = *ISA_LINALG_DECORATE(m_get_elem_p)(A->mat, A->n, k, k);
