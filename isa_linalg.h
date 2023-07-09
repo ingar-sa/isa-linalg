@@ -12,6 +12,7 @@
 //      Note, since it was a bit hard to find: the word size on the R4F is 32 bits, and the cache line size is 8 words
 // Some of the functions with an "out" parameter could maybe allocate a local array and then change the Vec/Mat
 // Test if get_elem_const makes a difference over non-const version
+// Header guards for the implementations
 
 // NOTE(Ingar): Lol, just realized that since everything is just a 1-dim float array, many of the
 //      functions could just be 1 function where you pass in the array part of the struct.
