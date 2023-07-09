@@ -79,6 +79,10 @@
 #define ISA_LINALG_V4_FORMAT_STR "%f %f %f %f"
 #endif
 
+#ifndef ISA_LINALG_M2_FORMAT_STR
+#define ISA_LINALG_M2_FORMAT_STR "%f %f\n%f %f\n"
+#endif
+
 #ifndef ISA_LINALG_M3_FORMAT_STR
 #define ISA_LINALG_M3_FORMAT_STR "%f %f %f\n"\
 "%f %f %f\n"\
@@ -121,6 +125,7 @@ typedef union  Vec3 Vec3;
 typedef union  Vec4 Vec4;
 
 typedef struct Mat  Mat;
+typedef union  Mat2 Mat2;
 typedef union  Mat3 Mat3;
 typedef union  Mat4 Mat4;
 
@@ -237,22 +242,6 @@ union Vec3
     float vec[3];
 };
 
-union Mat3
-{
-    struct
-    {
-        Vec3 v1, v2, v3;
-    };
-    
-    struct 
-    {
-        float m1[3], m2[3], m3[3];
-    };
-    
-    float mat[9];
-    
-};
-
 union Vec4
 {
     struct
@@ -266,6 +255,33 @@ union Vec4
     };
     
     float vec[4];
+    
+};
+
+union Mat2
+{
+    struct
+    {
+        float a, b, c, d;
+    };
+    
+    float mat[4];
+    
+};
+
+union Mat3
+{
+    struct
+    {
+        Vec3 v1, v2, v3;
+    };
+    
+    struct 
+    {
+        float m1[3], m2[3], m3[3];
+    };
+    
+    float mat[9];
     
 };
 
@@ -312,6 +328,7 @@ ISALG__PUBLICDEC void ISA_LINALG_DECORATE(v_printf) (const Vec  *vec);
 ISALG__PUBLICDEC void ISA_LINALG_DECORATE(v3_printf)(const Vec3 *vec3);
 ISALG__PUBLICDEC void ISA_LINALG_DECORATE(v4_printf)(const Vec4 *vec4);
 
+ISALG__PUBLICDEC void ISA_LINALG_DECORATE(m2_printf)(const Mat2 *mat2);
 ISALG__PUBLICDEC void ISA_LINALG_DECORATE(m3_printf)(const Mat3 *mat3);
 ISALG__PUBLICDEC void ISA_LINALG_DECORATE(m4_printf)(const Mat4 *mat4);
 
@@ -846,6 +863,14 @@ ISA_LINALG_DECORATE(v4_printf)(const Vec4 *vec4)
 {
     ISA_LINALG_PRINTF_FUN(ISA_LINALG_V4_FORMAT_STR,
                           vec4->x, vec4->y, vec4->z, vec4->w);
+}
+
+
+ISALG__PUBLICDEF void
+ISA_LINALG_DECORATE(m2_printf)(const Mat2 *mat2)
+{
+    ISA_LINALG_PRINTF_FUN(ISA_LINALG_M2_FORMAT_STR,
+                          mat2->a, mat2->b, mat2->c, mat2->d);
 }
 
 ISALG__PUBLICDEF void
