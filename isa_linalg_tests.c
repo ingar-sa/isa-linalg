@@ -123,7 +123,7 @@ static void test_vec3(void)
     memset(sv2, 0, VEC3_STRING_LEN);
     
     // Test v3_scale
-    scalar_mult(v1.vec, 2, 3);
+    scale(v1.vec, 2, 3);
     
     v3_sprintf(sv1, pv1);
     
@@ -198,7 +198,7 @@ static void test_vec4(void)
     
     
     // Test v4_scale
-    scalar_mult(v1.vec, 2, 3);
+    scale(v1.vec, 2, 3);
     
     v4_sprintf(sv1, pv1);
     
@@ -257,7 +257,7 @@ static void test_mat3(void)
     mv2->x = 2; mv2->y = 2; mv2->z = 2;
     mv3->x = 3; mv3->y = 3; mv3->z = 3;
     
-    scalar_mult(m1.mat, 2, 9);
+    scale(m1.mat, 2, 9);
     m3_sprintf(sm1, pm1);
     
     printf("\nm3_scale\n");
@@ -316,7 +316,7 @@ static void test_mat4(void)
     mv3->x = 3; mv3->y = 3; mv3->z = 3; mv3->w = 3;
     mv4->x = 4; mv4->y = 4; mv4->z = 4; mv4->w = 4;
     
-    scalar_mult(m1.mat, 2, 16);
+    scale(m1.mat, 2, 16);
     m4_sprintf(sm1, pm1);
     
     printf("\nm4_scale\n");
