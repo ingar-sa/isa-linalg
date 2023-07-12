@@ -5,6 +5,8 @@
 
 #define ISA_LINALG_STATIC
 #define ISA_LINALG_PRINTF
+#define ISA_LINALG_DO_DEBUG
+//#define ISA_LINALG_DO_CHECKS
 #define ISA_LINALG_DECORATE(name) name
 #define ISA_LINALG_IMPLEMENTATION
 #include "isa_linalg.h"
@@ -74,6 +76,7 @@ static void m4_sprintf(char *String, Mat4 *m4)
                   v3.x, v3.y, v3.z, v3.w,
                   v4.x, v4.y, v4.z, v4.w);
 }
+
 
 
 static void test_vec3(void)
@@ -397,6 +400,19 @@ static void test_how_printfs_look(void)
     printf("\n\n");
 }
 
+
+static void
+test_m_decompose_LUP(void)
+{
+    f32 A_arr[9];
+    Mat A = {.m = 3, .n = 3, .mat=A_arr };
+    
+    f32 pi_arr[4];
+    Vec pi = {.dim=4, .vec = pi_arr};
+    
+    m_decompose_LUP(&A, &pi);
+}
+
 int main(void)
 {
     test_vec3();
@@ -404,6 +420,7 @@ int main(void)
     test_mat3();
     test_mat4();
     test_how_printfs_look();
+    test_m_decompose_LUP();
     
     return 0;
 }

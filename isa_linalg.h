@@ -1,38 +1,49 @@
 // TODO(Ingar):
 // Look into ways to handle memory that does not involve malloc
+// 
 // Macros for array declarations?
+// 
 // Error handling
+// 
 // Debug stuff
+// 
 // Look into SIMD intrinsics for matrix operations
+// 
 // Make using fast inverse sqrt from quake an option? It should definitely be optional,
 //      since it involves undefined behaviour
+// 
 // Profile the code for types with known size vs code for the arbitrary-sized types
+// 
 // Variable decimal precision for printfs?
+// 
 // ARM Cortex-R4F, which is used on FramSat-1, has a 32-byte cache line, so I want to optimize for that cache line size
 //      Note, since it was a bit hard to find: the word size on the R4F is 32 bits, and the cache line size is 8 words
+// 
 // Some of the functions with an "out" parameter could maybe allocate a local array and then change the Vec/Mat
+// 
 // Test if get_elem_const makes a difference over non-const version
-// Header guards for the implementations
 
-// NOTE(Ingar): Lol, just realized that since everything is just a 1-dim float array, many of the
-//      functions could just be 1 function where you pass in the array part of the struct.
-//      I should look into whether we should provide just 1 function or the different variants.
+// NOTE(Ingar):
+// Lol, just realized that since everything is just a 1-dim float array, many of the
+// functions could just be 1 function where you pass in the array part of the struct.
+// I should look into whether we should provide just 1 function or the different variants.
 //
-//      Or, why not both? If the 1-version variant of the library has a smaller code size,
-//      we could just ifdef the variants and let the user choose if they want them
+// Or, why not both? If the 1-version variant of the library has a smaller code size,
+// we could just ifdef the variants and let the user choose if they want them
 //
-//      Some of the functions for the known-size types access elements directly instead of in a loop,
-//      so I need to profile them to see if there is a performance difference. Though a reduction in
-//      code size should of course be a prioritized cause for eventual changes.
+// Some of the functions for the known-size types access elements directly instead of in a loop,
+// so I need to profile them to see if there is a performance difference. Though a reduction in
+// code size should of course be a prioritized cause for eventual changes.
 //
-//      A possible reason for providing the variants is if we want to perform error checking.
-//      Then we would need to know the dimensions of the structs and the function variants will accommodate this.
+// A possible reason for providing the variants is if we want to perform error checking.
+// Then we would need to know the dimensions of the structs and the function variants will accommodate this.
 //
-//      Another reason is simply for readability of the intent of the code. It might be clearer what the
-//      algorithm does if the reader sees function calls with specific dimensions.
-
-// NOTE(Ingar): The definition of the implementation macro can only be done once in a project,
+// Another reason is simply for readability of the intent of the code. It might be clearer what the
+// algorithm does if the reader sees function calls with specific dimensions.
+// 
+// The definition of the implementation macro can only be done once in a project,
 // and this includes if your project includes a statically linked library that has defined it.
+// 
 // Inlining works poorly when you use the library in a statically linked library and then use that in another project.
 // Compiler no likey. Since the compiler decides itself whether to inline or not,
 // it probably just isn't worth declaring stuff as inline anyway.
@@ -41,15 +52,37 @@
 #define ISA_LINALG_INCLUDE_H
 
 #ifndef ISA_LINALG_DECORATE
-#define ISA_LINALG_DECORATE(name) isalg_##name // Define this before including if you want to change the names to something else
+#define ISA_LINALG_DECORATE(name) isalg_##name // Define this before including if you want to change the prefix to something else
 #endif
 
 #ifdef ISA_LINALG_DO_DEBUG
-#define ISALG__DEBUG(debug_code) debug_code
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#ifndef ISA_LINALG_DO_CHECKS
+#define ISA_LINALG_DO_CHECKS
+#endif
+#define ISALG__DEBUG_PRINT(err, format, ...) \
+fprintf(stderr, "Errno %i (%s) encountered at %s:%i in %s()\n", err, strerror(err),\
+__FILE__, __LINE__, __func__);\
+fprintf(stderr, format, ##__VA_ARGS__);
 #else
-#define ISALG__DEBUG(debug_code)
+#define ISALG__DEBUG_PRINT(...)
 #endif
 
+#ifdef ISA_LINALG_DO_CHECKS
+#define ISALG__RETURN_TYPE int
+#define ISA_LINALG_SUCCESS 0
+#define ISA_LINALG_FAILURE 1
+#define ISALG__RETURN_FAILURE return 1;
+#define ISALG__RETURN_SUCCESS return 0;
+#else 
+#define ISALG__RETURN_TYPE void
+#define ISA_LINALG_SUCCESS
+#define ISA_LINALG_FAILURE
+#define ISALG__RETURN_FAILURE return;
+#define ISALG__RETURN_SUCCESS return;
+#endif 
 // The split between declaration and definition is not necessary at the moment,
 // but this is setting us up in case we want to add compiler attributes later
 #ifdef ISA_LINALG_STATIC
@@ -97,11 +130,8 @@
 "%f %f %f %f\n"
 #endif
 
-#include <stdint.h> // For integer types
-
-#ifndef ISA_LINALG_NO_STD_MATH
 #include <math.h>
-#endif
+#include <stdint.h>
 
 // Wrappers for stdlib functions. You can define these if you want use others instead
 #ifndef ISA_LINALG_SQRT
@@ -236,9 +266,12 @@ ISA_LINALG_DECORATE(m3_skew)(const Vec3 *v, Mat3 *M_out);
 ISALG__PUBLICDEC void
 ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *v, Mat3 *M_out);
 
-ISALG__PUBLICDEC void
+ISALG__PUBLICDEC ISALG__RETURN_TYPE
 ISA_LINALG_DECORATE(m_solve_LUP)(const Mat *L, const Mat *U, const Vec *pi,
                                  const Vec *b, Vec *y, Vec *x);
+
+ISALG__PUBLICDEC ISALG__RETURN_TYPE
+ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi);
 
 
 // Vector types //
@@ -676,7 +709,7 @@ ISA_LINALG_DECORATE(m2_det)(const Mat2 *A)
 ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(m2_inverse)(const Mat2 *A, Mat2 *M_out)
 {
-    f32 det_inv = 1 / ISA_LINALG_DECORATE(m2_det)(A);
+    f32 det_inv = 1.0f / ISA_LINALG_DECORATE(m2_det)(A);
     
     M_out->a =  A->d;
     M_out->b = -A->b;
@@ -768,11 +801,18 @@ ISA_LINALG_DECORATE(m3_skew_squared)(const Vec3 *v, Mat3 *M_out)
     ISA_LINALG_DECORATE(sub)(M_out->mat, (const f32 *)A.mat, 9);
 }
 
-ISALG__PUBLICDEF void
+ISALG__PUBLICDEF ISALG__RETURN_TYPE
 ISA_LINALG_DECORATE(m_solve_LUP)(const Mat *L, const Mat *U,
                                  const Vec *pi, const Vec *b,
                                  Vec *y, Vec *x)
 {
+#ifdef ISA_LINALG_DO_CHECKS
+    if(L->n != L->m || L->m != U->n || U->n != U->m || U->m != pi->dim || pi->dim != b->dim || b->dim != x->dim){
+        ISALG__DEBUG_PRINT(EINVAL, "One or more dimensions do not match requirements!\n");
+        ISALG__RETURN_FAILURE
+    }
+#endif
+    
     for(u8 i = 0; i < L->n; ++i)
     {
         u8 b_i = (u8)(pi->vec[i] + 0.5);
@@ -796,11 +836,19 @@ ISA_LINALG_DECORATE(m_solve_LUP)(const Mat *L, const Mat *U,
         const f32 U_ii = *ISA_LINALG_DECORATE(m_get_elem_p_const)(U->mat, U->n, i, i);
         x->vec[i] = y->vec[i] / U_ii;
     }
+    
+    ISALG__RETURN_SUCCESS
 }
 
-ISALG__PUBLICDEF void
+ISALG__PUBLICDEF ISALG__RETURN_TYPE
 ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
 {
+#ifdef ISA_LINALG_DO_CHECKS
+    if (A->n != A->m || A->m != pi->dim){
+        ISALG__DEBUG_PRINT(EINVAL, "One or more dimensions do not match requirements!\n");
+        ISALG__RETURN_FAILURE
+    }
+#endif 
     // TODO(Ingar): There are definitely better ways of doing these series of getting elements and setting them
     for(u8 i = 0; i < A->n; ++i)
     {
@@ -815,7 +863,7 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
         for(u8 i = k; i < A->n; ++i)
         {
             f32 A_ik     = *ISA_LINALG_DECORATE(m_get_elem_p)(A->mat, A->n, i, k);
-            f32 A_ik_abs = ISA_LINALG_FABS(A_ik);
+            f32 A_ik_abs = (float)ISA_LINALG_FABS(A_ik);
             
             if(A_ik_abs > p){
                 p = A_ik_abs;
@@ -823,9 +871,9 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
             }
         }
         
-        if(0 == p) return; // A is singular
+        if(0 == p) ISALG__RETURN_FAILURE // A is singular
         
-        f32 temp         = pi->vec[k];
+            f32 temp         = pi->vec[k];
         pi->vec[k]       = pi->vec[k_prime];
         pi->vec[k_prime] = temp;
         
@@ -855,6 +903,8 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
             }
         }
     }
+    
+    ISALG__RETURN_SUCCESS
 }
 
 ISALG__PUBLICDEF void
