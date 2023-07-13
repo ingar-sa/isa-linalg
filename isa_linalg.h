@@ -458,6 +458,12 @@ ISA_LINALG_DECORATE(add)(f32 *a, const f32 *b, const u8 dim)
 }
 
 ISALG__PUBLICDEF void
+ISA_LINALG_DECORATE(v4_add)(Vec4 *v, const Vec4 *w)
+{
+    ISA_LINALG_DECORATE(add)(v->vec, w->vec, 4);
+}
+
+ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(sub)(f32 *a, const f32 *b, const u8 dim)
 {
     for(u8 i = 0; i < dim; ++i)
@@ -871,9 +877,9 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
             }
         }
         
-        if(0 == p) ISALG__RETURN_FAILURE // A is singular
+        if(0 == p) ISALG__RETURN_FAILURE; // A is singular
         
-            f32 temp         = pi->vec[k];
+        f32 temp         = pi->vec[k];
         pi->vec[k]       = pi->vec[k_prime];
         pi->vec[k_prime] = temp;
         
@@ -906,6 +912,8 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
     
     ISALG__RETURN_SUCCESS
 }
+
+
 
 ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(m_inv)(Mat *A)
