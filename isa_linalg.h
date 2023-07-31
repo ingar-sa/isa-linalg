@@ -914,13 +914,112 @@ ISA_LINALG_DECORATE(m_decompose_LUP)(Mat *A, Vec *pi)
 }
 
 
-
-ISALG__PUBLICDEF void
+// TODO(Ingar): Runtime allocation of fixed-size arrays are possible on Unix, but not Windows :/ tHaNk yOu MiCrOsOfT
+#ifndef _WIN32
+ISALG__PUBLICDEF ISALG__RETURN_TYPE
 ISA_LINALG_DECORATE(m_inv)(Mat *A)
 {
+#ifdef ISA_LINALG_DO_CHECKS
+    if (A->n != A->m){
+        ISALG__DEBUG_PRINT(EINVAL, "A must be a square matrix!");
+        ISALG__RETURN_FAILURE
+    }
+#endif
     
+    u8  A_n = A->n;
+    f32 pi_arr[A_n];
+    f32 b_arr[A_n];
+    f32 x_arr[A_n];
+    f32 y_arr[A_n];
+    f32 L_arr[A_n * A_n];
+    f32 A_inv_arr[A_n * A_n];
+    
+    Vec pi = { A_n, pi_arr };
+    Vec b = { A_n, b_arr };
+    Vec x = { A_n, x_arr };
+    Vec y = { A_n, y_arr };
+    Mat L  = { A_n, A_n, L_arr };
+    Mat A_inv  = { A_n, A_n, A_inv_arr };
+    
+    ISA_LINALG_DECORATE(m_decompose_LUP)(A, &pi);
+    ISA_LINALG_DECORATE(copy)(A, &L, A_n);
+    
+    ISA_LINALG_DECORATE(m_set_diag)(L.mat, 1, A_n);
+    
+    for(u8 i = 0; i < A_n; ++i)
+    {
+        ISA_LINALG_DECORATE(set_all)(b.vec, 0, b.dim);
+        b.vec[i] = 1;
+        m_solve_LUP(&L, &A, &pi, &b, &y, &x); // compute ith coloumn of inverse
+        
+        for(int j = 0; j < A_n; ++j)
+        {
+            ISA_LINALG_DECORATE(m_set_elem)(A_inverse.mat, x->vec[j], A_n, j, i);
+        }
+    }
+    
+    ISA_LINALG_DECORATE(copy)(A_inv.mat, A.mat, A_n);
+    
+    ISALG__RETURN_SUCCESS
 }
+#endif
 
+ISALG__PUBLICDEF void
+ISA_LINALG_DECORATE(m3_eigvals_symmetric)(Mat3 *A, Vec3 *lambda){
+    f32 *A_m1 = A->m1;
+    f32 *A_m2 = A->m2;
+    f32 *A_m3 = A->m3;
+    
+    f32 A_12 = A_m1[1];
+    f32 A_13 = A_m1[2];
+    f32 A_23 = A_m2[2];
+    
+    f32 s1 = ISA_LINALG_POW(A_12, 2) + ISA_LINALG_POW(A_13, 2) + ISA_LINALG_POW(A_23, 2);
+    if(s1 == 0){
+        lambda->vec[0] = A_m1[0];
+        lambda->vec[1] = A_m2[1];
+        lambda->vec[3] = A_m3[2];
+    }
+    else{
+        f32 A_11 = A_m1[0];
+        f32 A_22 = A_m2[1];
+        f32 A_33 = A_m3[2];;
+        
+        f32 q  = (A_11 + A_22 + A_33) / 3;
+        f32 s2 = ISA_LINALG_POW(A_11 - q, 2) + ISA_LINALG_POW(A_22 - q, 2) + ISA_LINALG_POW(A_33 - q, 2) + (2 * s1);
+        f32 p  = ISA_LINALG_SQRT(s2 / 6);
+        
+        Mat3 B = {0};
+        Mat3 B_predecessor = {0};
+        Mat3 qI = {0};
+        
+        ISA_LINALG_DECORATE(m_set_diag(qI.mat, q, 3));
+        
+        ISA_LINALG_DECORATE(copy)(A->mat, B_predecessor.mat, 9);
+        ISA_LINALG_DECORATE(sub)(B_predecessor.mat, qI.mat, 9);
+        
+        ISA_LINALG_DECORATE(copy)(B_predecessor.mat, B.mat, 9);
+        ISA_LINALG_DECORATE(scale)(B.mat, 1/q, 9);
+        
+        f32 r = ISA_LINALG_DECORATE(m3_det)(&B) / 2;
+        
+        // Without numerical errors one would have had r in [-1,1]
+        f32 phi;
+        if(r <= -1){
+            phi = ISALG__PI32 / 3;
+        }
+        else if(r >= 1){
+            phi = 0;
+        }
+        else{
+            phi = ISA_LINALG_ACOS(r) / 3;
+        }
+        
+        lambda->vec[0] = q + 2 * p * ISA_LINALG_COS(phi);
+        lambda->vec[2] = q + 2 * p * ISA_LINALG_COS(phi + (2 * ISALG__PI32 / 3)); // note the order, which supposedly may give lambda_1 >= lambda_2 >= lambda_3 for nondiagonal A
+        lambda->vec[1] = 3 * q - lambda->vec[0] - lambda->vec[2];
+    }
+}
 
 
 //////////////////////////////
