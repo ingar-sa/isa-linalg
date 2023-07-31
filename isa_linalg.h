@@ -637,8 +637,8 @@ ISALG__PUBLICDEF void
 ISA_LINALG_DECORATE(m_set_elem)(f32 *A, f32 val, const u8 ncols,
                                 const u8 i, const u8 j)
 {
-    f32 *A_ij = ISA_LINALG_DECORATE(m_get_elem_p)(A, ncols, i, j);
-    *A_ij = val;
+    u16 A_ij = j + (i * ncols);
+    A[A_ij] = val;
 }
 
 ISALG__PUBLICDEF void
