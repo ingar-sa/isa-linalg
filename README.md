@@ -7,3 +7,5 @@ It is written with resource-constrained systems in mind, so less memory use is a
 The implementation for many functions are based off of ***libmatrix*** by ***Martin Brandt*** (https://gitlab.orbitntnu.com/selfiesat/obc_adcs/adcs/lib/libmatrix).
 
 API documentation will be written later once the library's functionality has been fleshed out, profiled and tested to a degree where I am confident it is ready for a version 1.0 release.
+
+This software is licensed under the MIT license and is public domain (the Unlicense), choose whichever you want.
